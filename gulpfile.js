@@ -1,12 +1,14 @@
-const { src , dest , series } = require('gulp');
-const webp = require('gulp-webp');
+const { src , dest , series, watch, lastRun } = require('gulp');
+
+const clean = require('gulp-clean');
 const imageResize = require('gulp-image-resize');
+const webp = require('gulp-webp');
 
 function resize(cb) {
 
- src('src/img/**')
+return src('src/img/**',{ since: lastRun(resize) })
   .pipe(imageResize({
-    width : 1200,
+    width : 1920,
     height : 1200,
     crop : false,
     upscale : false,
@@ -16,12 +18,24 @@ function resize(cb) {
   cb();
 }
 
-function webpconvert(cb){
- src('dist/img/crop/**')
-  .pipe(webp({quality: 70}))
+function convert(cb){
+  return src('dist/img/crop/**',{ since: lastRun(convert) })
+  .pipe(webp({quality: 80}))
   .pipe(dest('dist/img/'))
   cb();
 }
 
+function cleaner(cb){
+  return src('dist/img/',{ allowEmpty: true })
+  .pipe(clean())
+  cb();
+}
 
-exports.default = series(resize, webpconvert);
+function watcher () {
+  gulp.watch('img/**', resize)
+}
+
+exports.watch = function() {
+  watch('src/img/**', series(resize, convert));
+};
+exports.default = series(cleaner, resize, convert);
